@@ -176,9 +176,7 @@ function Theme.build_palette()
     local edit_bg   = get("col_main_editbk") or FALLBACK_DARK.widget_bg
     local hi_3d     = get("col_main_3dhl") or FALLBACK_DARK.border
 
-    -- col_cursor is the playback/edit cursor: reliably bright green in REAPER's default theme.
-    -- col_marker is also often green. We darken cursor color so it's not neon.
-    -- col_selitem is kept only as last resort because it's blue in most themes.
+    -- Prefer genuinely green theme keys; avoid inheriting cyan/blue selection accents.
     local cursor_raw = get("col_cursor")
     local cursor_col = cursor_raw and darken(cursor_raw, 0.65) or nil
 
@@ -188,7 +186,6 @@ function Theme.build_palette()
       get("col_toolbar_text_on"),
       get("toolbararmed_color"),
       get("col_selitemmarker"),
-      get("col_selitem"),
     }
     local sel = nil
     for _, c in ipairs(accent_candidates) do
@@ -197,16 +194,14 @@ function Theme.build_palette()
         break
       end
     end
+
     if not sel then
-      -- None were greenish; prefer cursor color if available (could be any hue)
-      sel = cursor_col
-      if not sel then
-        for _, c in ipairs(accent_candidates) do
-          if c then sel = c; break end
-        end
-      end
+      -- No greenish key available: lock to a stable green baseline.
+      sel = FALLBACK_DARK.accent
+    else
+      -- Keep theme relation but nudge toward green so tabs/highlights don't drift cyan.
+      sel = blend_u32(sel, FALLBACK_DARK.accent, 0.35)
     end
-    sel = sel or FALLBACK_DARK.accent
 
     local dark_mode = is_dark(main_bg)
 

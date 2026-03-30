@@ -42,7 +42,6 @@ local REAPER_KEYS = {
 
 --- Convert Reaper native theme color to ImGui u32 ABGR with full alpha.
 local function reaper_to_imgui(reaper_color)
-  -- Use API conversion to avoid channel-order ambiguity across platforms/builds.
   local r, g, b = reaper.ColorFromNative(reaper_color)
   r = (r or 0) / 255.0
   g = (g or 0) / 255.0
@@ -53,17 +52,28 @@ local function reaper_to_imgui(reaper_color)
   return (0xFF000000) | ((b * 255) << 16) | ((g * 255) << 8) | (r * 255)
 end
 
+--- Safely unpack an ImGui u32 color into r, g, b, a (all 0-1 floats).
+local function unpack_u32(c)
+  if reaper.ImGui_ColorConvertU32ToDouble4 then
+    local r, g, b, a = reaper.ImGui_ColorConvertU32ToDouble4(c)
+    return r, g, b, a
+  end
+  -- Fallback: parse manually (ABGR layout)
+  local b2 = ((c >> 16) & 0xFF) / 255.0
+  local g2 = ((c >> 8)  & 0xFF) / 255.0
+  local r2 = ( c        & 0xFF) / 255.0
+  local a2 = ((c >> 24) & 0xFF) / 255.0
+  return r2, g2, b2, a2
+end
+
 --- Blend two u32 colors. t=0 → a, t=1 → b.
 local function blend_u32(a, b, t)
-  local ar, ag, ab, aa = reaper.ImGui_ColorConvertU32ToDouble4 and reaper.ImGui_ColorConvertU32ToDouble4(a) or 0, 0, 0, 1
-  local br, bg, bb, ba = reaper.ImGui_ColorConvertU32ToDouble4 and reaper.ImGui_ColorConvertU32ToDouble4(b) or 0, 0, 0, 1
+  local ar, ag, ab, aa = unpack_u32(a)
+  local br, bg, bb, ba = unpack_u32(b)
   local function lerp(x, y) return x + (y - x) * t end
   if reaper.ImGui_ColorConvertDouble4ToU32 then
     return reaper.ImGui_ColorConvertDouble4ToU32(
-      lerp(ar, br),
-      lerp(ag, bg),
-      lerp(ab, bb),
-      lerp(aa, ba)
+      lerp(ar, br), lerp(ag, bg), lerp(ab, bb), lerp(aa, ba)
     )
   end
   return a
@@ -71,7 +81,7 @@ end
 
 --- Darken a u32 color by factor (0=black, 1=unchanged).
 local function darken(c, factor)
-  local r, g, b, a = reaper.ImGui_ColorConvertU32ToDouble4 and reaper.ImGui_ColorConvertU32ToDouble4(c) or 0, 0, 0, 1
+  local r, g, b, a = unpack_u32(c)
   if reaper.ImGui_ColorConvertDouble4ToU32 then
     return reaper.ImGui_ColorConvertDouble4ToU32(
       math.max(0, math.min(1, r * factor)),
@@ -85,7 +95,7 @@ end
 
 --- Lighten a u32 color by factor (1=unchanged, 1.5=50% lighter clamped).
 local function lighten(c, factor)
-  local r, g, b, a = reaper.ImGui_ColorConvertU32ToDouble4 and reaper.ImGui_ColorConvertU32ToDouble4(c) or 0, 0, 0, 1
+  local r, g, b, a = unpack_u32(c)
   if reaper.ImGui_ColorConvertDouble4ToU32 then
     return reaper.ImGui_ColorConvertDouble4ToU32(
       math.max(0, math.min(1, r * factor)),
@@ -99,22 +109,22 @@ end
 
 --- Determines if a color is "dark" (luminance < 0.5).
 local function is_dark(c)
-  local r, g, b = reaper.ImGui_ColorConvertU32ToDouble4 and reaper.ImGui_ColorConvertU32ToDouble4(c) or 0, 0, 0
-  r, g, b = r * 255, g * 255, b * 255
-  return (0.299 * r + 0.587 * g + 0.114 * b) < 128
+  local r, g, b = unpack_u32(c)
+  return (0.299 * r + 0.587 * g + 0.114 * b) < 0.5
 end
 
---- u32 with explicit alpha
+--- u32 with explicit alpha override.
 local function with_alpha(c, a)
-  local r, g, b = reaper.ImGui_ColorConvertU32ToDouble4 and reaper.ImGui_ColorConvertU32ToDouble4(c) or 0, 0, 0
+  local r, g, b = unpack_u32(c)
   if reaper.ImGui_ColorConvertDouble4ToU32 then
     return reaper.ImGui_ColorConvertDouble4ToU32(r, g, b, a)
   end
   return c
 end
 
+--- Returns true if green channel dominates red and blue.
 local function is_greenish(c)
-  local r, g, b = reaper.ImGui_ColorConvertU32ToDouble4 and reaper.ImGui_ColorConvertU32ToDouble4(c) or 0, 0, 0
+  local r, g, b = unpack_u32(c)
   return (g > r * 1.05) and (g > b * 1.05)
 end
 

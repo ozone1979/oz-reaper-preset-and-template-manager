@@ -214,7 +214,7 @@ local function draw_grid(ctx, state, db, config, pal, tags_mod, widgets)
 
   -- List of results inside a scrollable child
   local list_h = 0  -- 0 = fill remaining
-  ImGui.ImGui_BeginChild(ctx, "##preset_list", 0, list_h, false, 0)
+  ImGui.ImGui_BeginChild(ctx, "##preset_list", 0, list_h, 0, 0)
 
   for _, preset in ipairs(state.results) do
     local uuid     = preset.uuid
@@ -306,7 +306,7 @@ function Browser.draw(ctx, state, db, config, pal, tags_mod, widgets)
   local W     = config.BROWSER_PANEL_W
 
   -- ── Left sidebar ────────────────────────────────────────────────────────────
-  ImGui.ImGui_BeginChild(ctx, "##browser_left", W, 0, true, 0)
+  ImGui.ImGui_BeginChild(ctx, "##browser_left", W, 0, 1, 0)
 
     -- Search box
     ImGui.ImGui_SetNextItemWidth(ctx, W - 16)
@@ -325,7 +325,7 @@ function Browser.draw(ctx, state, db, config, pal, tags_mod, widgets)
 
   -- ── Grid (right of sidebar) ─────────────────────────────────────────────────
   ImGui.ImGui_SameLine(ctx)
-  ImGui.ImGui_BeginChild(ctx, "##browser_grid", 0, 0, false, 0)
+  ImGui.ImGui_BeginChild(ctx, "##browser_grid", 0, 0, 0, 0)
     draw_grid(ctx, state, db, config, pal, tags_mod, widgets)
   ImGui.ImGui_EndChild(ctx)
 

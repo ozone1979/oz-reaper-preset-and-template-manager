@@ -45,7 +45,7 @@ function Detail.draw(ctx, preset, state, db, config, pal, tags_mod, widgets)
   local ImGui = reaper
   local W     = config.DETAIL_PANEL_W
 
-  ImGui.ImGui_BeginChild(ctx, "##detail_panel", W, 0, true, 0)
+  ImGui.ImGui_BeginChild(ctx, "##detail_panel", W, 0, 1, 0)
 
   if not preset then
     ImGui.ImGui_PushStyleColor(ctx, 0, pal.text_dim)

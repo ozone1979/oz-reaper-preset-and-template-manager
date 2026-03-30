@@ -1,7 +1,7 @@
 -- Oz PTM - Open Browser Panel.lua
 -- Opens the main Preset & Template Manager browser window.
 local script_path = debug.getinfo(1, "S").source:match("@?(.*[\\/])")
-local ptm = dofile(script_path .. "libs/Oz PTM Core.lua")
+local ptm = dofile(script_path .. "../Oz PTM Core.lua")
 
 local _, _, section_id, command_id = reaper.get_action_context()
 local function toggle(state)

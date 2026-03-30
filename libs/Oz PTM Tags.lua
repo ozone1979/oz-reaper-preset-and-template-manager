@@ -204,7 +204,7 @@ end
 
 -- ─── Color utilities ──────────────────────────────────────────────────────────
 
---- Converts a tag's color to an ImGui-compatible 32-bit ABGR integer.
+--- Converts a tag's color to an ImGui-compatible 32-bit RGBA integer.
 --- @param tag table
 --- @return number
 function Tags.tag_color_u32(tag)
@@ -212,20 +212,20 @@ function Tags.tag_color_u32(tag)
   local g = math.floor((tag.color_g or 0.5) * 255 + 0.5)
   local b = math.floor((tag.color_b or 0.5) * 255 + 0.5)
   local a = math.floor((tag.color_a or 1.0) * 255 + 0.5)
-  -- ImGui color: 0xAABBGGRR
-  return (a * 0x1000000) + (b * 0x10000) + (g * 0x100) + r
+  -- ImGui color: 0xRRGGBBAA
+  return (r << 24) | (g << 16) | (b << 8) | a
 end
 
 --- Given a color u32, derives a readable foreground (white or black).
 --- @param u32 number  ImGui color integer
---- @return number  either 0xFFFFFFFF or 0xFF000000
+--- @return number  either 0xFFFFFFFF or 0x000000FF
 function Tags.contrast_color(u32)
-  local r = (u32)        % 256
-  local g = (u32 / 256)  % 256
-  local b = (u32 / 65536) % 256
+  local r = (u32 >> 24) & 0xFF
+  local g = (u32 >> 16) & 0xFF
+  local b = (u32 >> 8) & 0xFF
   -- Relative luminance
   local lum = (0.299 * r + 0.587 * g + 0.114 * b)
-  return lum > 128 and 0xFF000000 or 0xFFFFFFFF
+  return lum > 128 and 0x000000FF or 0xFFFFFFFF
 end
 
 return Tags

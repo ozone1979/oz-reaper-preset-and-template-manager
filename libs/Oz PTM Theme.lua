@@ -160,7 +160,7 @@ function Theme.build_palette()
     local panel_bg  = get("col_trkpanel_bg") or main_bg
     local edit_bg   = get("col_main_editbk") or FALLBACK_DARK.widget_bg
     local hi_3d     = get("col_main_3dhl") or FALLBACK_DARK.border
-    local accent_theme = get("col_toolbar_text_on") or get("toolbararmed_color") or get("col_main_text2")
+    local accent_theme = get("toolbararmed_color") or get("col_toolbar_text_on") or get("col_main_text2")
     local sel          = accent_theme or get("col_selitem") or FALLBACK_DARK.accent
 
     local dark_mode = is_dark(main_bg)

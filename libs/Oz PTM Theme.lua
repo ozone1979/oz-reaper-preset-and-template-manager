@@ -176,32 +176,16 @@ function Theme.build_palette()
     local edit_bg   = get("col_main_editbk") or FALLBACK_DARK.widget_bg
     local hi_3d     = get("col_main_3dhl") or FALLBACK_DARK.border
 
-    -- Prefer genuinely green theme keys; avoid inheriting cyan/blue selection accents.
-    local cursor_raw = get("col_cursor")
-    local cursor_col = cursor_raw and darken(cursor_raw, 0.65) or nil
-
-    local accent_candidates = {
-      cursor_col,
-      get("col_marker"),
-      get("col_toolbar_text_on"),
-      get("toolbararmed_color"),
-      get("col_selitemmarker"),
-    }
-    local sel = nil
-    for _, c in ipairs(accent_candidates) do
-      if c and is_greenish(c) then
-        sel = c
-        break
-      end
-    end
-
-    if not sel then
-      -- No greenish key available: lock to a stable green baseline.
-      sel = FALLBACK_DARK.accent
-    else
-      -- Keep theme relation but nudge toward green so tabs/highlights don't drift cyan.
-      sel = blend_u32(sel, FALLBACK_DARK.accent, 0.35)
-    end
+    -- Deterministic accent source order from REAPER theme keys.
+    -- Prefer active toolbar text tint first (closest to the green user-facing toolbar state),
+    -- then cursor and marker colors. Keep col_selitem as the last resort.
+    local sel = get("col_toolbar_text_on")
+      or get("col_cursor")
+      or get("col_marker")
+      or get("toolbararmed_color")
+      or get("col_selitemmarker")
+      or get("col_selitem")
+      or FALLBACK_DARK.accent
 
     local dark_mode = is_dark(main_bg)
 

@@ -1,0 +1,17 @@
+{
+  "folders": [
+    {
+      "path": ".",
+      "name": "Oz Reaper Preset and Template Manager"
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/.git": false,
+      "**/.github": false
+    },
+    "search.exclude": {
+      "**/.git": true
+    }
+  }
+}

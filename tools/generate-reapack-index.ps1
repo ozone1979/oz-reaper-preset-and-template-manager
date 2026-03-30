@@ -32,6 +32,7 @@ if (-not $mainActionFiles -or $mainActionFiles.Count -eq 0) {
 }
 
 $supportFiles = @(
+    "Oz PTM Core.lua",
     "libs/Oz PTM Config.lua",
     "libs/Oz PTM Core.lua",
     "libs/Oz PTM DB.lua",

@@ -226,7 +226,7 @@ function Theme.push_style(ctx, pal)
     push(ctx, col("Button",        21), pal.widget_bg)
     push(ctx, col("ButtonHovered", 22), pal.accent_hover or pal.accent)
     push(ctx, col("ButtonActive",  23), pal.accent_active or pal.accent)
-    return 16
+    return 19
   end
 
   push(ctx, col("WindowBg",       2),  pal.bg)

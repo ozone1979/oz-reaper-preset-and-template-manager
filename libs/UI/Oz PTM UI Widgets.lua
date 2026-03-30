@@ -95,8 +95,8 @@ function Widgets.waveform(ctx, peaks, w, h, pal)
   local hovered = ImGui.ImGui_IsItemHovered(ctx)
 
   local draw = ImGui.ImGui_GetWindowDrawList(ctx)
-  local bg   = pal.waveform_bg  or 0xFF1A1A22
-  local fill = pal.waveform_fill or 0xFF3366CC
+  local bg   = pal.waveform_bg or pal.panel_bg or 0xFF22262A
+  local fill = pal.waveform_fill or pal.accent or 0xFF22AA66
   if hovered then fill = pal.accent_hover or fill end
 
   ImGui.ImGui_DrawList_AddRectFilled(draw, x, y, x + w, y + h, bg, 2)

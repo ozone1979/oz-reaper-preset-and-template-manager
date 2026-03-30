@@ -113,6 +113,11 @@ local function with_alpha(c, a)
   return c
 end
 
+local function is_greenish(c)
+  local r, g, b = reaper.ImGui_ColorConvertU32ToDouble4 and reaper.ImGui_ColorConvertU32ToDouble4(c) or 0, 0, 0
+  return (g > r * 1.05) and (g > b * 1.05)
+end
+
 -- ─── Fallback hard-coded dark palette (used when Reaper API unavailable) ─────
 
 local FALLBACK_DARK = {
@@ -120,7 +125,7 @@ local FALLBACK_DARK = {
   bg_alt         = 0xFF232327,
   panel_bg       = 0xFF1F1F23,
   widget_bg      = 0xFF3A3A3E,
-  widget_active  = 0xFF5050AA,
+  widget_active  = 0xFF3C5A3C,
   border         = 0xFF404044,
   text           = 0xFFDDDDDD,
   text_dim       = 0xFF888888,
@@ -130,12 +135,12 @@ local FALLBACK_DARK = {
   accent_active  = 0xFF1A8A52,
   danger         = 0xFFBB4444,
   success        = 0xFF44AA88,
-  waveform_fill  = 0xFF3366CC,
+  waveform_fill  = 0xFF22AA66,
   waveform_bg    = 0xFF1A1A22,
-  cloud_bg       = 0xFF121216,
+  cloud_bg       = 0xFF1D2420,
   scrollbar_bg   = 0xFF2A2A2E,
-  scrollbar_grab = 0xFF555566,
-  tag_default    = 0xFF446688,
+  scrollbar_grab = 0xFF556655,
+  tag_default    = 0xFF4B6E54,
 }
 
 -- ─── Build palette from Reaper theme ─────────────────────────────────────────
@@ -160,8 +165,30 @@ function Theme.build_palette()
     local panel_bg  = get("col_trkpanel_bg") or main_bg
     local edit_bg   = get("col_main_editbk") or FALLBACK_DARK.widget_bg
     local hi_3d     = get("col_main_3dhl") or FALLBACK_DARK.border
-    local accent_theme = get("toolbararmed_color") or get("col_toolbar_text_on") or get("col_main_text2")
-    local sel          = accent_theme or get("col_selitem") or FALLBACK_DARK.accent
+
+    local accent_candidates = {
+      get("toolbararmed_color"),
+      get("col_toolbar_text_on"),
+      get("col_selitem"),
+      get("col_selitemmarker"),
+      get("col_marker"),
+    }
+    local sel = nil
+    for _, c in ipairs(accent_candidates) do
+      if c and is_greenish(c) then
+        sel = c
+        break
+      end
+    end
+    if not sel then
+      for _, c in ipairs(accent_candidates) do
+        if c then
+          sel = c
+          break
+        end
+      end
+    end
+    sel = sel or FALLBACK_DARK.accent
 
     local dark_mode = is_dark(main_bg)
 
@@ -234,17 +261,26 @@ function Theme.push_style(ctx, pal)
   end
 
   if Theme.USE_NATIVE_REAPER_STYLE then
-    -- Keep REAPER native surfaces; only enforce accent slots from theme-derived accent.
-    push_if("Header",        with_alpha(pal.accent, 0.30))
-    push_if("HeaderHovered", with_alpha(pal.accent, 0.55))
-    push_if("HeaderActive",  with_alpha(pal.accent, 0.80))
-    push_if("Tab",           with_alpha(pal.accent, 0.45))
-    push_if("TabHovered",    with_alpha(pal.accent, 0.85))
-    push_if("TabActive",     with_alpha(pal.accent, 1.00))
-    push_if("CheckMark",     pal.accent)
-    push_if("SliderGrab",    pal.accent)
-    push_if("ButtonHovered", pal.accent_hover or pal.accent)
-    push_if("ButtonActive",  pal.accent_active or pal.accent)
+    -- Keep REAPER visual language, but lock panel surfaces and accents to theme-derived palette.
+    push_if("WindowBg",       pal.bg)
+    push_if("ChildBg",        pal.panel_bg)
+    push_if("PopupBg",        pal.panel_bg)
+    push_if("FrameBg",        pal.widget_bg)
+    push_if("FrameBgHovered", pal.widget_hovered or pal.widget_bg)
+    push_if("FrameBgActive",  pal.widget_active or pal.accent)
+    push_if("TitleBg",        pal.bg_alt)
+    push_if("TitleBgActive",  pal.bg_alt)
+    push_if("Button",         pal.widget_bg)
+    push_if("Header",         with_alpha(pal.accent, 0.30))
+    push_if("HeaderHovered",  with_alpha(pal.accent, 0.55))
+    push_if("HeaderActive",   with_alpha(pal.accent, 0.80))
+    push_if("Tab",            with_alpha(pal.accent, 0.45))
+    push_if("TabHovered",     with_alpha(pal.accent, 0.85))
+    push_if("TabActive",      with_alpha(pal.accent, 1.00))
+    push_if("CheckMark",      pal.accent)
+    push_if("SliderGrab",     pal.accent)
+    push_if("ButtonHovered",  pal.accent_hover or pal.accent)
+    push_if("ButtonActive",   pal.accent_active or pal.accent)
     return pushed
   end
 

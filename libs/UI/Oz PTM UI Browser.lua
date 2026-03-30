@@ -215,10 +215,19 @@ local function draw_grid(ctx, state, db, config, pal, tags_mod, widgets)
 
       ImGui.ImGui_PushID(ctx, "row_" .. uuid)
 
+      local selected_pushes = 0
       -- Highlight selected row
       if selected then
-        ImGui.ImGui_PushStyleColor(ctx, 24, pal.accent)   -- Header
-        ImGui.ImGui_PushStyleColor(ctx, 25, pal.accent_hover or pal.accent)
+        local col_header = ImGui.ImGui_Col_Header and ImGui.ImGui_Col_Header()
+        local col_header_hovered = ImGui.ImGui_Col_HeaderHovered and ImGui.ImGui_Col_HeaderHovered()
+        if col_header then
+          ImGui.ImGui_PushStyleColor(ctx, col_header, pal.accent_active or pal.accent)
+          selected_pushes = selected_pushes + 1
+        end
+        if col_header_hovered then
+          ImGui.ImGui_PushStyleColor(ctx, col_header_hovered, pal.accent_hover or pal.accent)
+          selected_pushes = selected_pushes + 1
+        end
       end
 
       local row_lbl = string.format("%-40s %-14s %-18s %-14s  %s",
@@ -243,7 +252,9 @@ local function draw_grid(ctx, state, db, config, pal, tags_mod, widgets)
         ImGui.ImGui_OpenPopup(ctx, "preset_ctx")
       end
 
-      if selected then ImGui.ImGui_PopStyleColor(ctx, 2) end
+      if selected_pushes > 0 then
+        ImGui.ImGui_PopStyleColor(ctx, selected_pushes)
+      end
 
       -- Scroll to item if requested
       if state.scroll_to == uuid then

@@ -31,15 +31,16 @@ end
 --- @param state  cloud state
 --- @param db     DB module
 --- @param tags_mod Tags module
-local function rebuild_layout(state, db, tags_mod)
+--- @param pal    palette
+local function rebuild_layout(state, db, tags_mod, pal)
   state.dot_cache = {}
   local data = db.get and db.get("") or nil
   if not data then return end
 
   for _, p in pairs(data.presets) do
     if p.preview_path and p.preview_path ~= "" then
-      -- Pick color: first tag color, else neutral
-      local dot_color = 0xFF666688
+      -- Pick color: first tag color, else neutral from palette.
+      local dot_color = (pal and (pal.tag_default or pal.accent_active)) or 0xFF556655
       if p.tags and #p.tags > 0 then
         local t = db.get_tag(p.tags[1])
         if t then dot_color = tags_mod.tag_color_u32(t) end
@@ -85,7 +86,7 @@ function Cloud.draw(ctx, state, db, config, pal, tags_mod)
   local ImGui = reaper
 
   if state.needs_layout then
-    rebuild_layout(state, db, tags_mod)
+    rebuild_layout(state, db, tags_mod, pal)
   end
 
   -- Invisible button fills available space so we can capture input
@@ -98,7 +99,7 @@ function Cloud.draw(ctx, state, db, config, pal, tags_mod)
   local cx, cy = ImGui.ImGui_GetCursorScreenPos(ctx)
   local draw    = ImGui.ImGui_GetWindowDrawList(ctx)
   ImGui.ImGui_DrawList_AddRectFilled(draw, cx, cy, cx + avail_w, cy + avail_h,
-    pal.cloud_bg or 0xFF121216)
+    pal.cloud_bg or pal.panel_bg or pal.bg_alt or 0xFF2A2E2A)
 
   ImGui.ImGui_InvisibleButton(ctx, "##cloud_canvas", avail_w, avail_h)
   local canvas_hovered = ImGui.ImGui_IsItemHovered(ctx)
@@ -155,7 +156,7 @@ function Cloud.draw(ctx, state, db, config, pal, tags_mod)
         hovered_uuid = dot.uuid
         -- Draw larger glow ring
         ImGui.ImGui_DrawList_AddCircleFilled(draw, sx, sy, r_hov + 3,
-          (pal.accent and (pal.accent & 0x00FFFFFF | 0x80000000)) or 0x805577FF)
+          (pal.accent and (pal.accent & 0x00FFFFFF | 0x80000000)) or 0x8044AA66)
         ImGui.ImGui_DrawList_AddCircleFilled(draw, sx, sy, r_hov, dot.color)
       else
         ImGui.ImGui_DrawList_AddCircleFilled(draw, sx, sy, r, dot.color)

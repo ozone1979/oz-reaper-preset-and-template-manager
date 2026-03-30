@@ -329,7 +329,10 @@ local function run_frame()
   local visible, open = ImGui.ImGui_Begin(ui.ctx, Config.WINDOW_TITLE, true,
     ImGui.ImGui_WindowFlags_NoCollapse and ImGui.ImGui_WindowFlags_NoCollapse() or 0)
 
+  ui.open = open
+
   if not open then
+    ImGui.ImGui_End(ui.ctx)
     Theme.pop_style(ui.ctx, style_count)
     return false  -- window closed
   end
@@ -429,8 +432,8 @@ function PTM.run_browser_panel()
   end
 
   local function loop()
-    local ok = pcall(run_frame)
-    if not ok or not ui.open then
+    local ok, keep_running = pcall(run_frame)
+    if not ok or keep_running == false then
       if reaper.ImGui_DestroyContext then
         reaper.ImGui_DestroyContext(ui.ctx)
       end

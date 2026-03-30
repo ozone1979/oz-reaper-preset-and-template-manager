@@ -141,7 +141,7 @@ function Theme.build_palette()
     local panel_bg  = get("col_trkpanel_bg") or main_bg
     local edit_bg   = get("col_main_editbk") or FALLBACK_DARK.widget_bg
     local hi_3d     = get("col_main_3dhl") or FALLBACK_DARK.border
-    local accent_theme = get("col_main_text2")
+    local accent_theme = get("col_toolbar_text_on") or get("toolbararmed_color") or get("col_main_text2")
     local sel          = accent_theme or get("col_selitem") or FALLBACK_DARK.accent
 
     local dark_mode = is_dark(main_bg)
@@ -194,9 +194,6 @@ end
 --- @param pal   palette table from build_palette()
 --- @return number  number of colors pushed (pass to PopStyleColor)
 function Theme.push_style(ctx, pal)
-  if Theme.USE_NATIVE_REAPER_STYLE then
-    return 0
-  end
   if not ctx or not reaper.ImGui_PushStyleColor then return 0 end
 
   local push = reaper.ImGui_PushStyleColor
@@ -206,6 +203,21 @@ function Theme.push_style(ctx, pal)
       return fn()
     end
     return fallback
+  end
+
+  if Theme.USE_NATIVE_REAPER_STYLE then
+    -- Keep native style baseline, only remap the blue accent slots to theme-derived accent.
+    push(ctx, col("TitleBg",       10), pal.bg_alt)
+    push(ctx, col("TitleBgActive", 11), pal.bg_alt)
+    push(ctx, col("Header",        24), with_alpha(pal.accent, 0.30))
+    push(ctx, col("HeaderHovered", 25), with_alpha(pal.accent, 0.55))
+    push(ctx, col("HeaderActive",  26), with_alpha(pal.accent, 0.80))
+    push(ctx, col("Tab",           33), darken(pal.bg_alt, 0.95))
+    push(ctx, col("TabHovered",    34), with_alpha(pal.accent, 0.85))
+    push(ctx, col("TabActive",     35), with_alpha(pal.accent, 1.00))
+    push(ctx, col("CheckMark",     18), pal.accent)
+    push(ctx, col("SliderGrab",    19), pal.accent)
+    return 10
   end
 
   push(ctx, col("WindowBg",       2),  pal.bg)

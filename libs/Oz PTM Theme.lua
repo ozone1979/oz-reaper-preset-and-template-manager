@@ -3,7 +3,7 @@
 -- a palette table used to style all ImGui panels, so the tool feels native
 -- to whatever Reaper skin the user has loaded.
 --
--- Color convention: all colors are returned as ImGui u32 integers (0xRRGGBBAA)
+-- Color convention: all colors are returned as ImGui u32 integers (0xAABBGGRR)
 -- unless the name ends in _f4, which returns a 4-element array {r,g,b,a} 0-1.
 
 local Theme = {}
@@ -40,83 +40,83 @@ local REAPER_KEYS = {
 
 -- ─── Helpers ─────────────────────────────────────────────────────────────────
 
---- Convert Reaper native theme color to ImGui u32 RGBA with full alpha.
+--- Convert Reaper native theme color to ImGui u32 ABGR with full alpha.
 local function reaper_to_imgui(reaper_color)
   -- Use API conversion to avoid channel-order ambiguity across platforms/builds.
   local r, g, b = reaper.ColorFromNative(reaper_color)
   r = r or 0
   g = g or 0
   b = b or 0
-  return (r << 24) | (g << 16) | (b << 8) | 0xFF
+  return (0xFF000000) | (b << 16) | (g << 8) | r
 end
 
 --- Blend two u32 colors. t=0 → a, t=1 → b.
 local function blend_u32(a, b, t)
   local function chan(x, shift) return (x >> shift) & 0xFF end
   local function lerp(x, y) return math.floor(x + (y - x) * t + 0.5) end
-  local r = lerp(chan(a, 24), chan(b, 24))
-  local g = lerp(chan(a, 16), chan(b, 16))
-  local bb = lerp(chan(a, 8), chan(b, 8))
-  local aa = lerp(chan(a, 0), chan(b, 0))
-  return (r << 24) | (g << 16) | (bb << 8) | aa
+  local r = lerp(chan(a, 0),  chan(b, 0))
+  local g = lerp(chan(a, 8),  chan(b, 8))
+  local bb = lerp(chan(a, 16), chan(b, 16))
+  local aa = lerp(chan(a, 24), chan(b, 24))
+  return (aa << 24) | (bb << 16) | (g << 8) | r
 end
 
 --- Darken a u32 color by factor (0=black, 1=unchanged).
 local function darken(c, factor)
   local function d(x) return math.floor(x * factor + 0.5) end
-  local r = d((c >> 24) & 0xFF)
-  local g = d((c >> 16) & 0xFF)
-  local b = d((c >> 8) & 0xFF)
-  local a = c & 0xFF
-  return (r << 24) | (g << 16) | (b << 8) | a
+  local r = d((c)       & 0xFF)
+  local g = d((c >> 8)  & 0xFF)
+  local b = d((c >> 16) & 0xFF)
+  local a = (c >> 24) & 0xFF
+  return (a << 24) | (b << 16) | (g << 8) | r
 end
 
 --- Lighten a u32 color by factor (1=unchanged, 1.5=50% lighter clamped).
 local function lighten(c, factor)
   local function l(x) return math.min(255, math.floor(x * factor + 0.5)) end
-  local r = l((c >> 24) & 0xFF)
-  local g = l((c >> 16) & 0xFF)
-  local b = l((c >> 8) & 0xFF)
-  local a = c & 0xFF
-  return (r << 24) | (g << 16) | (b << 8) | a
+  local r = l((c)       & 0xFF)
+  local g = l((c >> 8)  & 0xFF)
+  local b = l((c >> 16) & 0xFF)
+  local a = (c >> 24) & 0xFF
+  return (a << 24) | (b << 16) | (g << 8) | r
 end
 
 --- Determines if a color is "dark" (luminance < 0.5).
 local function is_dark(c)
-  local r = (c >> 24) & 0xFF
-  local g = (c >> 16) & 0xFF
-  local b = (c >> 8) & 0xFF
+  local r = (c)       & 0xFF
+  local g = (c >> 8)  & 0xFF
+  local b = (c >> 16) & 0xFF
   return (0.299 * r + 0.587 * g + 0.114 * b) < 128
 end
 
 --- u32 with explicit alpha
 local function with_alpha(c, a)
-  return ((c) & 0xFFFFFF00) | math.floor(a * 255 + 0.5)
+  return ((c) & 0x00FFFFFF) | (math.floor(a * 255 + 0.5) << 24)
 end
 
 -- ─── Fallback hard-coded dark palette (used when Reaper API unavailable) ─────
 
 local FALLBACK_DARK = {
-  bg             = 0x2A2A2EFF,
-  bg_alt         = 0x232327FF,
-  panel_bg       = 0x1F1F23FF,
-  widget_bg      = 0x3A3A3EFF,
-  widget_active  = 0x5050AAFF,
-  border         = 0x404044FF,
-  text           = 0xDDDDDDFF,
-  text_dim       = 0x888888FF,
+  bg             = 0xFF2A2A2E,
+  bg_alt         = 0xFF232327,
+  panel_bg       = 0xFF1F1F23,
+  widget_bg      = 0xFF3A3A3E,
+  widget_active  = 0xFF5050AA,
+  border         = 0xFF404044,
+  text           = 0xFFDDDDDD,
+  text_dim       = 0xFF888888,
   text_header    = 0xFFFFFFFF,
-  accent         = 0x5577FFFF,
-  accent_hover   = 0x7799FFFF,
-  accent_active  = 0x4455EEFF,
-  danger         = 0xBB4444FF,
-  success        = 0x44AA88FF,
-  waveform_fill  = 0x3366CCFF,
-  waveform_bg    = 0x1A1A22FF,
-  cloud_bg       = 0x121216FF,
-  scrollbar_bg   = 0x2A2A2EFF,
-  scrollbar_grab = 0x555566FF,
-  tag_default    = 0x446688FF,
+  accent         = 0xFF22AA66,
+  accent_hover   = 0xFF33CC88,
+  accent_active  = 0xFF1A8A52,
+  danger         = 0xFFBB4444,
+  success        = 0xFF44AA88,
+  waveform_fill  = 0xFF3366CC,
+  waveform_bg    = 0xFF1A1A22,
+  cloud_bg       = 0xFF121216,
+  scrollbar_bg   = 0xFF2A2A2E,
+  scrollbar_grab = 0xFF555566,
+  tag_default    = 0xFF446688,
 }
 
 -- ─── Build palette from Reaper theme ─────────────────────────────────────────
@@ -135,8 +135,8 @@ function Theme.build_palette()
       return (v and v ~= -1) and reaper_to_imgui(v) or nil
     end
 
-    local main_bg   = get("col_main_bg")   or FALLBACK_DARK.bg
-    local main_bg2  = get("col_main_bg2")  or FALLBACK_DARK.bg_alt
+    local main_bg   = get("col_main_bg2")  or get("col_main_bg") or FALLBACK_DARK.bg
+    local main_bg2  = get("col_main_bg")   or FALLBACK_DARK.bg_alt
     local main_text = get("col_main_text") or FALLBACK_DARK.text
     local panel_bg  = get("col_trkpanel_bg") or main_bg
     local edit_bg   = get("col_main_editbk") or FALLBACK_DARK.widget_bg
@@ -168,8 +168,8 @@ function Theme.build_palette()
     pal.widget_active  = dark_mode and lighten(edit_bg, 1.4) or darken(edit_bg, 0.8)
 
     -- Specific UI zones
-    pal.danger         = 0xBB4444FF
-    pal.success        = 0x44AA88FF
+    pal.danger         = 0xFFBB4444
+    pal.success        = 0xFF44AA88
     pal.waveform_fill  = sel
     pal.waveform_bg    = darken(main_bg, 0.6)
     pal.cloud_bg       = darken(main_bg, 0.7)
@@ -206,18 +206,27 @@ function Theme.push_style(ctx, pal)
   end
 
   if Theme.USE_NATIVE_REAPER_STYLE then
-    -- Keep native style baseline, only remap the blue accent slots to theme-derived accent.
+    -- Keep native style baseline, but force panel surfaces + accent slots to REAPER-derived colors.
+    push(ctx, col("WindowBg",       2), pal.bg)
+    push(ctx, col("ChildBg",        3), pal.panel_bg)
+    push(ctx, col("PopupBg",        4), pal.panel_bg)
+    push(ctx, col("FrameBg",        7), pal.widget_bg)
+    push(ctx, col("FrameBgHovered", 8), pal.widget_hovered or pal.widget_bg)
+    push(ctx, col("FrameBgActive",  9), pal.widget_active or pal.accent)
     push(ctx, col("TitleBg",       10), pal.bg_alt)
     push(ctx, col("TitleBgActive", 11), pal.bg_alt)
     push(ctx, col("Header",        24), with_alpha(pal.accent, 0.30))
     push(ctx, col("HeaderHovered", 25), with_alpha(pal.accent, 0.55))
     push(ctx, col("HeaderActive",  26), with_alpha(pal.accent, 0.80))
-    push(ctx, col("Tab",           33), darken(pal.bg_alt, 0.95))
+    push(ctx, col("Tab",           33), pal.widget_bg)
     push(ctx, col("TabHovered",    34), with_alpha(pal.accent, 0.85))
     push(ctx, col("TabActive",     35), with_alpha(pal.accent, 1.00))
     push(ctx, col("CheckMark",     18), pal.accent)
     push(ctx, col("SliderGrab",    19), pal.accent)
-    return 10
+    push(ctx, col("Button",        21), pal.widget_bg)
+    push(ctx, col("ButtonHovered", 22), pal.accent_hover or pal.accent)
+    push(ctx, col("ButtonActive",  23), pal.accent_active or pal.accent)
+    return 16
   end
 
   push(ctx, col("WindowBg",       2),  pal.bg)

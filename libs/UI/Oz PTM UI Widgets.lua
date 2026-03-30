@@ -190,10 +190,10 @@ end
 function Widgets.color_swatch(ctx, id, r, g, b, a, size)
   local ImGui = reaper
   size = size or 16
-  local u32 = (math.floor((r or 0) * 255) << 24) |
-              (math.floor((g or 0) * 255) << 16) |
-              (math.floor((b or 0) * 255) << 8)  |
-               math.floor((a or 1) * 255)
+  local u32 = (math.floor((a or 1) * 255) << 24) |
+               (math.floor((b or 0) * 255) << 16) |
+               (math.floor((g or 0) * 255) << 8)  |
+                math.floor((r or 0) * 255)
 
   local sx, sy = ImGui.ImGui_GetCursorScreenPos(ctx)
   ImGui.ImGui_InvisibleButton(ctx, "##swatch_" .. id, size, size)

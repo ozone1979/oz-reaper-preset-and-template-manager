@@ -214,80 +214,83 @@ local function draw_grid(ctx, state, db, config, pal, tags_mod, widgets)
 
   -- List of results inside a scrollable child
   local list_h = 0  -- 0 = fill remaining
-  ImGui.ImGui_BeginChild(ctx, "##preset_list", 0, list_h, 0, 0)
+  local list_open = ImGui.ImGui_BeginChild(ctx, "##preset_list", 0, list_h, 0, 0)
 
-  for _, preset in ipairs(state.results) do
-    local uuid     = preset.uuid
-    local selected = (state.selected_uuid == uuid)
+  if list_open then
 
-    ImGui.ImGui_PushID(ctx, "row_" .. uuid)
+    for _, preset in ipairs(state.results) do
+      local uuid     = preset.uuid
+      local selected = (state.selected_uuid == uuid)
 
-    -- Highlight selected row
-    if selected then
-      ImGui.ImGui_PushStyleColor(ctx, 24, pal.accent)   -- Header
-      ImGui.ImGui_PushStyleColor(ctx, 25, pal.accent_hover or pal.accent)
+      ImGui.ImGui_PushID(ctx, "row_" .. uuid)
+
+      -- Highlight selected row
+      if selected then
+        ImGui.ImGui_PushStyleColor(ctx, 24, pal.accent)   -- Header
+        ImGui.ImGui_PushStyleColor(ctx, 25, pal.accent_hover or pal.accent)
+      end
+
+      local row_lbl = string.format("%-40s %-14s %-18s %-14s  %s",
+        (preset.name   or ""):sub(1, 40),
+        (preset.type   or ""):sub(1, 14),
+        (preset.pack   or ""):sub(1, 18),
+        (preset.author or ""):sub(1, 14),
+        (preset.date   or ""):sub(1, 10))
+
+      if ImGui.ImGui_Selectable(ctx, row_lbl, selected, 64, 0, cw.GRID_ROW_H) then -- SelectableFlags_AllowDoubleClick = 64? no, use 4
+        state.selected_uuid = uuid
+      end
+
+      -- Double-click to load the preset
+      if ImGui.ImGui_IsItemHovered(ctx) and ImGui.ImGui_IsMouseDoubleClicked(ctx, 0) then
+        state.pending_load = uuid
+      end
+
+      -- Right-click context menu
+      if ImGui.ImGui_IsItemHovered(ctx) and ImGui.ImGui_IsMouseClicked(ctx, 1) then
+        state.ctx_menu_uuid = uuid
+        ImGui.ImGui_OpenPopup(ctx, "preset_ctx")
+      end
+
+      if selected then ImGui.ImGui_PopStyleColor(ctx, 2) end
+
+      -- Scroll to item if requested
+      if state.scroll_to == uuid then
+        ImGui.ImGui_SetScrollHereY(ctx, 0.5)
+        state.scroll_to = nil
+      end
+
+      ImGui.ImGui_PopID(ctx)
     end
 
-    local row_lbl = string.format("%-40s %-14s %-18s %-14s  %s",
-      (preset.name   or ""):sub(1, 40),
-      (preset.type   or ""):sub(1, 14),
-      (preset.pack   or ""):sub(1, 18),
-      (preset.author or ""):sub(1, 14),
-      (preset.date   or ""):sub(1, 10))
-
-    if ImGui.ImGui_Selectable(ctx, row_lbl, selected, 64, 0, cw.GRID_ROW_H) then -- SelectableFlags_AllowDoubleClick = 64? no, use 4
-      state.selected_uuid = uuid
+    -- Context menu (rendered outside the loop to avoid ID issues)
+    if ImGui.ImGui_BeginPopup(ctx, "preset_ctx") then
+      local p = state.ctx_menu_uuid and db.get_preset(state.ctx_menu_uuid)
+      if p then
+        ImGui.ImGui_Text(ctx, p.name or "?")
+        ImGui.ImGui_Separator(ctx)
+        if ImGui.ImGui_MenuItem(ctx, "Select") then
+          state.selected_uuid = state.ctx_menu_uuid
+        end
+        if ImGui.ImGui_MenuItem(ctx, "Load preset / template") then
+          state.pending_load = state.ctx_menu_uuid
+        end
+        if ImGui.ImGui_MenuItem(ctx, "Render preview audio") then
+          state.pending_render_preview = state.ctx_menu_uuid
+        end
+        if ImGui.ImGui_MenuItem(ctx, "Sync NKS sidecar") then
+          state.pending_nks_sync = state.ctx_menu_uuid
+        end
+        ImGui.ImGui_Separator(ctx)
+        if ImGui.ImGui_MenuItem(ctx, "Remove from library") then
+          state.pending_remove = state.ctx_menu_uuid
+        end
+      end
+      ImGui.ImGui_EndPopup(ctx)
     end
 
-    -- Double-click to load the preset
-    if ImGui.ImGui_IsItemHovered(ctx) and ImGui.ImGui_IsMouseDoubleClicked(ctx, 0) then
-      state.pending_load = uuid
-    end
-
-    -- Right-click context menu
-    if ImGui.ImGui_IsItemHovered(ctx) and ImGui.ImGui_IsMouseClicked(ctx, 1) then
-      state.ctx_menu_uuid = uuid
-      ImGui.ImGui_OpenPopup(ctx, "preset_ctx")
-    end
-
-    if selected then ImGui.ImGui_PopStyleColor(ctx, 2) end
-
-    -- Scroll to item if requested
-    if state.scroll_to == uuid then
-      ImGui.ImGui_SetScrollHereY(ctx, 0.5)
-      state.scroll_to = nil
-    end
-
-    ImGui.ImGui_PopID(ctx)
+    ImGui.ImGui_EndChild(ctx)
   end
-
-  -- Context menu (rendered outside the loop to avoid ID issues)
-  if ImGui.ImGui_BeginPopup(ctx, "preset_ctx") then
-    local p = state.ctx_menu_uuid and db.get_preset(state.ctx_menu_uuid)
-    if p then
-      ImGui.ImGui_Text(ctx, p.name or "?")
-      ImGui.ImGui_Separator(ctx)
-      if ImGui.ImGui_MenuItem(ctx, "Select") then
-        state.selected_uuid = state.ctx_menu_uuid
-      end
-      if ImGui.ImGui_MenuItem(ctx, "Load preset / template") then
-        state.pending_load = state.ctx_menu_uuid
-      end
-      if ImGui.ImGui_MenuItem(ctx, "Render preview audio") then
-        state.pending_render_preview = state.ctx_menu_uuid
-      end
-      if ImGui.ImGui_MenuItem(ctx, "Sync NKS sidecar") then
-        state.pending_nks_sync = state.ctx_menu_uuid
-      end
-      ImGui.ImGui_Separator(ctx)
-      if ImGui.ImGui_MenuItem(ctx, "Remove from library") then
-        state.pending_remove = state.ctx_menu_uuid
-      end
-    end
-    ImGui.ImGui_EndPopup(ctx)
-  end
-
-  ImGui.ImGui_EndChild(ctx)
 end
 
 -- ─── Main draw function ───────────────────────────────────────────────────────
@@ -306,7 +309,9 @@ function Browser.draw(ctx, state, db, config, pal, tags_mod, widgets)
   local W     = config.BROWSER_PANEL_W
 
   -- ── Left sidebar ────────────────────────────────────────────────────────────
-  ImGui.ImGui_BeginChild(ctx, "##browser_left", W, 0, 1, 0)
+  local left_open = ImGui.ImGui_BeginChild(ctx, "##browser_left", W, 0, 1, 0)
+
+  if left_open then
 
     -- Search box
     ImGui.ImGui_SetNextItemWidth(ctx, W - 16)
@@ -321,13 +326,16 @@ function Browser.draw(ctx, state, db, config, pal, tags_mod, widgets)
     ImGui.ImGui_Spacing(ctx)
     draw_tag_panel(ctx, state, db, pal, tags_mod)
 
-  ImGui.ImGui_EndChild(ctx)
+    ImGui.ImGui_EndChild(ctx)
+  end
 
   -- ── Grid (right of sidebar) ─────────────────────────────────────────────────
   ImGui.ImGui_SameLine(ctx)
-  ImGui.ImGui_BeginChild(ctx, "##browser_grid", 0, 0, 0, 0)
+  local grid_open = ImGui.ImGui_BeginChild(ctx, "##browser_grid", 0, 0, 0, 0)
+  if grid_open then
     draw_grid(ctx, state, db, config, pal, tags_mod, widgets)
-  ImGui.ImGui_EndChild(ctx)
+    ImGui.ImGui_EndChild(ctx)
+  end
 
   return state
 end

@@ -317,90 +317,105 @@ local function run_frame()
   local pal  = ui.palette
 
   local style_count = Theme.push_style(ui.ctx, pal)
+  local did_begin_window = false
 
-  -- Restore window pos/size from ext-state on first open
-  local wx = Config.get_ext_num(Config.KEY_WINDOW_X, 100)
-  local wy = Config.get_ext_num(Config.KEY_WINDOW_Y, 100)
-  local ww = Config.get_ext_num(Config.KEY_WINDOW_W, Config.DEFAULT_W)
-  local wh = Config.get_ext_num(Config.KEY_WINDOW_H, Config.DEFAULT_H)
-  ImGui.ImGui_SetNextWindowPos(ui.ctx, wx, wy, ImGui.ImGui_Cond_FirstUseEver and ImGui.ImGui_Cond_FirstUseEver() or 2)
-  ImGui.ImGui_SetNextWindowSize(ui.ctx, ww, wh, ImGui.ImGui_Cond_FirstUseEver and ImGui.ImGui_Cond_FirstUseEver() or 2)
-
-  local visible, open = ImGui.ImGui_Begin(ui.ctx, Config.WINDOW_TITLE, true,
-    ImGui.ImGui_WindowFlags_NoCollapse and ImGui.ImGui_WindowFlags_NoCollapse() or 0)
-
-  ui.open = open
-
-  if not open then
-    ImGui.ImGui_End(ui.ctx)
+  local function finish(ret)
+    if did_begin_window then
+      ImGui.ImGui_End(ui.ctx)
+    end
     Theme.pop_style(ui.ctx, style_count)
-    return false  -- window closed
+    return ret
   end
 
-  if visible then
-    -- Tab bar
-    if ImGui.ImGui_BeginTabBar(ui.ctx, "##main_tabs") then
-      for _, entry in ipairs({
-        { id = Config.TAB_BROWSER,  label = "Browser"           },
-        { id = Config.TAB_CLOUD,    label = "Similarity Cloud"  },
-        { id = Config.TAB_SETTINGS, label = "Settings"          },
-      }) do
-        local flags = 0
-        if ImGui.ImGui_BeginTabItem(ui.ctx, entry.label, nil, flags) then
-          ui.tab = entry.id
-          ImGui.ImGui_EndTabItem(ui.ctx)
+  local ok, keep_running = xpcall(function()
+    -- Restore window pos/size from ext-state on first open
+    local wx = Config.get_ext_num(Config.KEY_WINDOW_X, 100)
+    local wy = Config.get_ext_num(Config.KEY_WINDOW_Y, 100)
+    local ww = Config.get_ext_num(Config.KEY_WINDOW_W, Config.DEFAULT_W)
+    local wh = Config.get_ext_num(Config.KEY_WINDOW_H, Config.DEFAULT_H)
+    ImGui.ImGui_SetNextWindowPos(ui.ctx, wx, wy, ImGui.ImGui_Cond_FirstUseEver and ImGui.ImGui_Cond_FirstUseEver() or 2)
+    ImGui.ImGui_SetNextWindowSize(ui.ctx, ww, wh, ImGui.ImGui_Cond_FirstUseEver and ImGui.ImGui_Cond_FirstUseEver() or 2)
+
+    local visible, open = ImGui.ImGui_Begin(ui.ctx, Config.WINDOW_TITLE, true,
+      ImGui.ImGui_WindowFlags_NoCollapse and ImGui.ImGui_WindowFlags_NoCollapse() or 0)
+    did_begin_window = true
+
+    ui.open = open
+
+    if not open then
+      return false  -- window closed
+    end
+
+    if visible then
+      -- Tab bar
+      if ImGui.ImGui_BeginTabBar(ui.ctx, "##main_tabs") then
+        for _, entry in ipairs({
+          { id = Config.TAB_BROWSER,  label = "Browser"           },
+          { id = Config.TAB_CLOUD,    label = "Similarity Cloud"  },
+          { id = Config.TAB_SETTINGS, label = "Settings"          },
+        }) do
+          local flags = 0
+          if ImGui.ImGui_BeginTabItem(ui.ctx, entry.label, nil, flags) then
+            ui.tab = entry.id
+            ImGui.ImGui_EndTabItem(ui.ctx)
+          end
         end
-      end
-      ImGui.ImGui_EndTabBar(ui.ctx)
-    end
-
-    ImGui.ImGui_Separator(ui.ctx)
-
-    -- ── Browser tab ──────────────────────────────────────────────────────────
-    if ui.tab == Config.TAB_BROWSER then
-      Browser.draw(ui.ctx, ui.browser_st, DB, Config, pal, Tags, Widgets)
-
-      -- Detail panel for selected preset
-      local sel_uuid = ui.browser_st.selected_uuid
-      local sel_preset = sel_uuid and DB.get_preset(sel_uuid) or nil
-      ImGui.ImGui_SameLine(ui.ctx)
-      Detail.draw(ui.ctx, sel_preset, ui.detail_st, DB, Config, pal, Tags, Widgets)
-
-    -- ── Cloud tab ────────────────────────────────────────────────────────────
-    elseif ui.tab == Config.TAB_CLOUD then
-      local clicked_uuid = Cloud.draw(ui.ctx, ui.cloud_st, DB, Config, pal, Tags)
-      if clicked_uuid then
-        ui.browser_st.selected_uuid = clicked_uuid
-        ui.browser_st.scroll_to     = clicked_uuid
-        ui.tab = Config.TAB_BROWSER  -- jump back to browser with selection
+        ImGui.ImGui_EndTabBar(ui.ctx)
       end
 
-    -- ── Settings tab ─────────────────────────────────────────────────────────
-    elseif ui.tab == Config.TAB_SETTINGS then
-      draw_settings(ui.ctx, pal)
+      ImGui.ImGui_Separator(ui.ctx)
+
+      -- ── Browser tab ──────────────────────────────────────────────────────────
+      if ui.tab == Config.TAB_BROWSER then
+        Browser.draw(ui.ctx, ui.browser_st, DB, Config, pal, Tags, Widgets)
+
+        -- Detail panel for selected preset
+        local sel_uuid = ui.browser_st.selected_uuid
+        local sel_preset = sel_uuid and DB.get_preset(sel_uuid) or nil
+        ImGui.ImGui_SameLine(ui.ctx)
+        Detail.draw(ui.ctx, sel_preset, ui.detail_st, DB, Config, pal, Tags, Widgets)
+
+      -- ── Cloud tab ────────────────────────────────────────────────────────────
+      elseif ui.tab == Config.TAB_CLOUD then
+        local clicked_uuid = Cloud.draw(ui.ctx, ui.cloud_st, DB, Config, pal, Tags)
+        if clicked_uuid then
+          ui.browser_st.selected_uuid = clicked_uuid
+          ui.browser_st.scroll_to     = clicked_uuid
+          ui.tab = Config.TAB_BROWSER  -- jump back to browser with selection
+        end
+
+      -- ── Settings tab ─────────────────────────────────────────────────────────
+      elseif ui.tab == Config.TAB_SETTINGS then
+        draw_settings(ui.ctx, pal)
+      end
+
+      dispatch_pending(ui.ctx, pal)
+
+      -- Auto-save DB on changes
+      if DB.is_dirty() then
+        DB.save(db_path)
+      end
     end
 
-    dispatch_pending(ui.ctx, pal)
-
-    -- Auto-save DB on changes
-    if DB.is_dirty() then
-      DB.save(db_path)
+    -- Save window position/size
+    local cur_x, cur_y = ImGui.ImGui_GetWindowPos(ui.ctx)
+    local cur_w, cur_h = ImGui.ImGui_GetWindowSize(ui.ctx)
+    if cur_x and cur_y then
+      Config.set_ext(Config.KEY_WINDOW_X, cur_x)
+      Config.set_ext(Config.KEY_WINDOW_Y, cur_y)
+      Config.set_ext(Config.KEY_WINDOW_W, cur_w)
+      Config.set_ext(Config.KEY_WINDOW_H, cur_h)
     end
+
+    return true
+  end, debug.traceback)
+
+  if not ok then
+    reaper.ShowConsoleMsg("Oz PTM UI error:\n" .. tostring(keep_running) .. "\n")
+    return finish(false)
   end
 
-  -- Save window position/size
-  local cur_x, cur_y = ImGui.ImGui_GetWindowPos(ui.ctx)
-  local cur_w, cur_h = ImGui.ImGui_GetWindowSize(ui.ctx)
-  if cur_x and cur_y then
-    Config.set_ext(Config.KEY_WINDOW_X, cur_x)
-    Config.set_ext(Config.KEY_WINDOW_Y, cur_y)
-    Config.set_ext(Config.KEY_WINDOW_W, cur_w)
-    Config.set_ext(Config.KEY_WINDOW_H, cur_h)
-  end
-
-  ImGui.ImGui_End(ui.ctx)
-  Theme.pop_style(ui.ctx, style_count)
-  return true
+  return finish(keep_running)
 end
 
 -- ─── Public entry points ──────────────────────────────────────────────────────

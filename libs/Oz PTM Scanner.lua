@@ -76,6 +76,31 @@ local function enumerate_files(dir, recurse, results)
   end
 end
 
+--- Returns true if a directory is enumerable via REAPER APIs.
+--- This avoids relying on reaper.file_exists, which may return false for folders.
+local function can_enumerate_dir(dir)
+  if not dir or dir == "" then return false end
+  if reaper.EnumerateFiles then
+    local ok, first = pcall(reaper.EnumerateFiles, dir, 0)
+    if ok and first ~= nil then return true end
+    -- Empty folder can still be valid: check subdirectories too.
+    if reaper.EnumerateSubdirectories then
+      local ok2, first_sub = pcall(reaper.EnumerateSubdirectories, dir, 0)
+      if ok2 and first_sub ~= nil then return true end
+      if ok2 then return true end -- valid but empty
+    end
+    if ok then return true end -- valid but empty
+  end
+
+  -- Fallback probe for non-REAPER contexts.
+  local probe = io.popen('dir /b "' .. dir .. '" 2>nul')
+  if probe then
+    probe:close()
+    return true
+  end
+  return false
+end
+
 --- Tests whether a file path should be indexed based on its extension.
 --- @param path string
 --- @param config table
@@ -98,10 +123,7 @@ function Scanner.scan_all(config, db, on_progress)
   local all_paths = {}
 
   for _, root in ipairs(roots) do
-    if reaper.file_exists and reaper.file_exists(root.path) then
-      enumerate_files(root.path, root.recurse, all_paths)
-    elseif not reaper.file_exists then
-      -- If file_exists not available, attempt anyway
+    if can_enumerate_dir(root.path) then
       enumerate_files(root.path, root.recurse, all_paths)
     end
   end
@@ -134,9 +156,7 @@ function Scanner.scan_new(config, db, on_progress)
   local all_paths = {}
 
   for _, root in ipairs(roots) do
-    if reaper.file_exists and reaper.file_exists(root.path) then
-      enumerate_files(root.path, root.recurse, all_paths)
-    elseif not reaper.file_exists then
+    if can_enumerate_dir(root.path) then
       enumerate_files(root.path, root.recurse, all_paths)
     end
   end

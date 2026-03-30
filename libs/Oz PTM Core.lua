@@ -225,11 +225,15 @@ local function dispatch_pending(ctx, pal)
     bst.pending_load = nil
     if p then
       if p.type == "track_template" then
-        reaper.Main_openProject and reaper.Main_openProject(p.path)
+        if reaper.Main_openProject then
+          reaper.Main_openProject(p.path)
+        end
         -- Actually insert template:
         -- No API exists to load a track template by path silently in base Reaper.
         -- Best effort: open via file manager fallback.
-        reaper.CF_ShellExecute and reaper.CF_ShellExecute(p.path)
+        if reaper.CF_ShellExecute then
+          reaper.CF_ShellExecute(p.path)
+        end
       elseif p.type == "fx_chain" then
         -- Apply to selected track's first FX slot
         local sel = reaper.GetSelectedTrack(0, 0)
@@ -239,7 +243,9 @@ local function dispatch_pending(ctx, pal)
           reaper.ShowMessageBox("Select a track first to apply the FX chain.", "Oz PTM", 0)
         end
       elseif p.type == "fx_preset" or p.type == "instrument_bank" then
-        reaper.CF_ShellExecute and reaper.CF_ShellExecute(p.path)
+        if reaper.CF_ShellExecute then
+          reaper.CF_ShellExecute(p.path)
+        end
       end
     end
   end
@@ -408,20 +414,26 @@ function PTM.run_browser_panel()
 
   local dock = Config.get_ext_num(Config.KEY_DOCK_STATE, 0)
   ui.ctx = reaper.ImGui_CreateContext(Config.WINDOW_TITLE)
-  reaper.ImGui_SetConfigFlags and
-    reaper.ImGui_SetConfigFlags(ui.ctx, reaper.ImGui_ConfigFlags_DockingEnable and
-      reaper.ImGui_ConfigFlags_DockingEnable() or 0)
+  if reaper.ImGui_SetConfigFlags then
+    reaper.ImGui_SetConfigFlags(
+      ui.ctx,
+      reaper.ImGui_ConfigFlags_DockingEnable and reaper.ImGui_ConfigFlags_DockingEnable() or 0
+    )
+  end
 
   if dock ~= 0 then
     -- Will be docked on first frame via SetNextWindowDockID
-    reaper.ImGui_SetNextWindowDockID and
+    if reaper.ImGui_SetNextWindowDockID then
       reaper.ImGui_SetNextWindowDockID(ui.ctx, dock, 0)
+    end
   end
 
   local function loop()
     local ok = pcall(run_frame)
     if not ok or not ui.open then
-      reaper.ImGui_DestroyContext and reaper.ImGui_DestroyContext(ui.ctx)
+      if reaper.ImGui_DestroyContext then
+        reaper.ImGui_DestroyContext(ui.ctx)
+      end
       ui.ctx = nil
       return
     end

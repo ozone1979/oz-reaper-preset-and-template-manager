@@ -227,7 +227,9 @@ function Detail.draw(ctx, preset, state, db, config, pal, tags_mod, widgets)
 
   -- Copy path button
   if ImGui.ImGui_SmallButton(ctx, "Copy path") then
-    reaper.CF_SetClipboard and reaper.CF_SetClipboard(preset.path or "")
+    if reaper.CF_SetClipboard then
+      reaper.CF_SetClipboard(preset.path or "")
+    end
   end
 
   -- Load preset button (main action)

@@ -48,11 +48,13 @@ local function draw_type_panel(ctx, state, pal, config)
 
   for _, tf in ipairs(TYPE_FILTERS) do
     local selected = (state.filter_type == tf.key)
+    local key_id = (tf.key ~= "" and tf.key) or "all"
+    local type_label = string.format("%s##type_%s", tf.label, key_id)
     if selected then
       ImGui.ImGui_PushStyleColor(ctx, 24, pal.accent)  -- Header
       ImGui.ImGui_PushStyleColor(ctx, 25, pal.accent_hover or pal.accent)
     end
-    if ImGui.ImGui_Selectable(ctx, tf.label, selected, 0, 0, 0) then
+    if ImGui.ImGui_Selectable(ctx, type_label, selected, 0, 0, 0) then
       if state.filter_type ~= tf.key then
         state.filter_type  = tf.key
         state.results_dirty = true
@@ -94,7 +96,9 @@ local function draw_tag_node(ctx, node, state, pal, tags_mod)
   local open = ImGui.ImGui_TreeNodeEx(ctx, "##tag_" .. uuid, flags)
   ImGui.ImGui_SameLine(ctx, 0, 4)
 
-  if ImGui.ImGui_Selectable(ctx, tag.name or "?", selected, 0, 0, 0) then
+  local tag_display = (tag.name and tag.name ~= "") and tag.name or "(untitled tag)"
+  local tag_label = string.format("%s##tagsel_%s", tag_display, tostring(uuid or "nil"))
+  if ImGui.ImGui_Selectable(ctx, tag_label, selected, 0, 0, 0) then
     state.filter_tag   = selected and "" or uuid
     state.results_dirty = true
   end
@@ -145,7 +149,7 @@ local function draw_tag_panel(ctx, state, db, pal, tags_mod)
   -- "All tags" row
   local no_tag_sel = (state.filter_tag == "")
   if no_tag_sel then ImGui.ImGui_PushStyleColor(ctx, 24, pal.accent) end
-  if ImGui.ImGui_Selectable(ctx, "All", no_tag_sel, 0, 0, 0) then
+  if ImGui.ImGui_Selectable(ctx, "All##tag_filter_all", no_tag_sel, 0, 0, 0) then
     state.filter_tag   = ""
     state.results_dirty = true
   end
@@ -189,7 +193,7 @@ local function draw_grid(ctx, state, db, config, pal, tags_mod, widgets)
     if is_sort then
       lbl = lbl .. (state.sort_asc and " ▲" or " ▼")
     end
-    if ImGui.ImGui_SmallButton(ctx, lbl) then
+    if ImGui.ImGui_SmallButton(ctx, lbl .. "##sort_" .. col.field) then
       if state.sort_field == col.field then
         state.sort_asc = not state.sort_asc
       else

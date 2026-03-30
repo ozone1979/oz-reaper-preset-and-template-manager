@@ -50,17 +50,12 @@ local function draw_type_panel(ctx, state, pal, config)
     local selected = (state.filter_type == tf.key)
     local key_id = (tf.key ~= "" and tf.key) or "all"
     local type_label = string.format("%s##type_%s", tf.label, key_id)
-    if selected then
-      ImGui.ImGui_PushStyleColor(ctx, 24, pal.accent)  -- Header
-      ImGui.ImGui_PushStyleColor(ctx, 25, pal.accent_hover or pal.accent)
-    end
     if ImGui.ImGui_Selectable(ctx, type_label, selected, 0, 0, 0) then
       if state.filter_type ~= tf.key then
         state.filter_type  = tf.key
         state.results_dirty = true
       end
     end
-    if selected then ImGui.ImGui_PopStyleColor(ctx, 2) end
   end
 end
 
@@ -82,10 +77,6 @@ local function draw_tag_node(ctx, node, state, pal, tags_mod)
   ImGui.ImGui_SameLine(ctx, 0, 4)
 
   local selected = (state.filter_tag == uuid)
-  if selected then
-    ImGui.ImGui_PushStyleColor(ctx, 24, pal.accent)
-    ImGui.ImGui_PushStyleColor(ctx, 25, pal.accent_hover or pal.accent)
-  end
 
   local flags = 0
   if not has_kids then
@@ -123,8 +114,6 @@ local function draw_tag_node(ctx, node, state, pal, tags_mod)
     ImGui.ImGui_EndPopup(ctx)
   end
 
-  if selected then ImGui.ImGui_PopStyleColor(ctx, 2) end
-
   if open then
     if has_kids then
       -- Sort children alphab.
@@ -148,12 +137,10 @@ local function draw_tag_panel(ctx, state, db, pal, tags_mod)
 
   -- "All tags" row
   local no_tag_sel = (state.filter_tag == "")
-  if no_tag_sel then ImGui.ImGui_PushStyleColor(ctx, 24, pal.accent) end
   if ImGui.ImGui_Selectable(ctx, "All##tag_filter_all", no_tag_sel, 0, 0, 0) then
     state.filter_tag   = ""
     state.results_dirty = true
   end
-  if no_tag_sel then ImGui.ImGui_PopStyleColor(ctx, 1) end
 
   if state.tag_tree_dirty then
     state.tag_tree       = db.build_tag_tree()

@@ -7,6 +7,7 @@
 -- unless the name ends in _f4, which returns a 4-element array {r,g,b,a} 0-1.
 
 local Theme = {}
+Theme.USE_NATIVE_REAPER_STYLE = true
 
 -- ─── Reaper theme color key names (see reaper-theme docs) ────────────────────
 -- We query a curated subset and derive the rest.
@@ -140,7 +141,8 @@ function Theme.build_palette()
     local panel_bg  = get("col_trkpanel_bg") or main_bg
     local edit_bg   = get("col_main_editbk") or FALLBACK_DARK.widget_bg
     local hi_3d     = get("col_main_3dhl") or FALLBACK_DARK.border
-    local sel       = get("col_selitem")   or FALLBACK_DARK.accent
+    local accent_theme = get("col_main_text2")
+    local sel          = accent_theme or get("col_selitem") or FALLBACK_DARK.accent
 
     local dark_mode = is_dark(main_bg)
 
@@ -166,8 +168,8 @@ function Theme.build_palette()
     pal.widget_active  = dark_mode and lighten(edit_bg, 1.4) or darken(edit_bg, 0.8)
 
     -- Specific UI zones
-    pal.danger         = 0xFFBB4444
-    pal.success        = 0xFF44AA88
+    pal.danger         = 0xBB4444FF
+    pal.success        = 0x44AA88FF
     pal.waveform_fill  = sel
     pal.waveform_bg    = darken(main_bg, 0.6)
     pal.cloud_bg       = darken(main_bg, 0.7)
@@ -192,6 +194,9 @@ end
 --- @param pal   palette table from build_palette()
 --- @return number  number of colors pushed (pass to PopStyleColor)
 function Theme.push_style(ctx, pal)
+  if Theme.USE_NATIVE_REAPER_STYLE then
+    return 0
+  end
   if not ctx or not reaper.ImGui_PushStyleColor then return 0 end
 
   local push = reaper.ImGui_PushStyleColor

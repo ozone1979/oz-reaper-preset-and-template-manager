@@ -216,66 +216,66 @@ function Theme.push_style(ctx, pal)
   if not ctx or not reaper.ImGui_PushStyleColor then return 0 end
 
   local push = reaper.ImGui_PushStyleColor
-  local function col(name, fallback)
+  local function col(name)
     local fn = reaper["ImGui_Col_" .. name]
     if type(fn) == "function" then
       return fn()
     end
-    return fallback
+    return nil
+  end
+
+  local pushed = 0
+  local function push_if(name, value)
+    local cid = col(name)
+    if cid ~= nil then
+      push(ctx, cid, value)
+      pushed = pushed + 1
+    end
   end
 
   if Theme.USE_NATIVE_REAPER_STYLE then
-    -- Keep native style baseline, but force panel surfaces + accent slots to REAPER-derived colors.
-    push(ctx, col("WindowBg",       2), pal.bg)
-    push(ctx, col("ChildBg",        3), pal.panel_bg)
-    push(ctx, col("PopupBg",        4), pal.panel_bg)
-    push(ctx, col("FrameBg",        7), pal.widget_bg)
-    push(ctx, col("FrameBgHovered", 8), pal.widget_hovered or pal.widget_bg)
-    push(ctx, col("FrameBgActive",  9), pal.widget_active or pal.accent)
-    push(ctx, col("TitleBg",       10), pal.bg_alt)
-    push(ctx, col("TitleBgActive", 11), pal.bg_alt)
-    push(ctx, col("Header",        24), with_alpha(pal.accent, 0.30))
-    push(ctx, col("HeaderHovered", 25), with_alpha(pal.accent, 0.55))
-    push(ctx, col("HeaderActive",  26), with_alpha(pal.accent, 0.80))
-    push(ctx, col("Tab",           33), pal.widget_bg)
-    push(ctx, col("TabHovered",    34), with_alpha(pal.accent, 0.85))
-    push(ctx, col("TabActive",     35), with_alpha(pal.accent, 1.00))
-    push(ctx, col("CheckMark",     18), pal.accent)
-    push(ctx, col("SliderGrab",    19), pal.accent)
-    push(ctx, col("Button",        21), pal.widget_bg)
-    push(ctx, col("ButtonHovered", 22), pal.accent_hover or pal.accent)
-    push(ctx, col("ButtonActive",  23), pal.accent_active or pal.accent)
-    return 19
+    -- Keep REAPER native surfaces; only enforce accent slots from theme-derived accent.
+    push_if("Header",        with_alpha(pal.accent, 0.30))
+    push_if("HeaderHovered", with_alpha(pal.accent, 0.55))
+    push_if("HeaderActive",  with_alpha(pal.accent, 0.80))
+    push_if("Tab",           with_alpha(pal.accent, 0.45))
+    push_if("TabHovered",    with_alpha(pal.accent, 0.85))
+    push_if("TabActive",     with_alpha(pal.accent, 1.00))
+    push_if("CheckMark",     pal.accent)
+    push_if("SliderGrab",    pal.accent)
+    push_if("ButtonHovered", pal.accent_hover or pal.accent)
+    push_if("ButtonActive",  pal.accent_active or pal.accent)
+    return pushed
   end
 
-  push(ctx, col("WindowBg",       2),  pal.bg)
-  push(ctx, col("ChildBg",        3),  pal.panel_bg)
-  push(ctx, col("PopupBg",        4),  pal.panel_bg)
-  push(ctx, col("Border",         5),  pal.border)
-  push(ctx, col("FrameBg",        7),  pal.widget_bg)
-  push(ctx, col("FrameBgHovered", 8),  pal.widget_hovered or pal.widget_bg)
-  push(ctx, col("FrameBgActive",  9),  pal.widget_active  or pal.accent)
-  push(ctx, col("TitleBg",       10),  pal.panel_bg)
-  push(ctx, col("TitleBgActive", 11),  pal.bg_alt)
-  push(ctx, col("MenuBarBg",     13),  pal.bg_alt)
-  push(ctx, col("ScrollbarBg",   14),  pal.scrollbar_bg)
-  push(ctx, col("ScrollbarGrab", 15),  pal.scrollbar_grab)
-  push(ctx, col("CheckMark",     18),  pal.accent)
-  push(ctx, col("SliderGrab",    19),  pal.accent)
-  push(ctx, col("Button",        21),  pal.widget_bg)
-  push(ctx, col("ButtonHovered", 22),  pal.accent_hover or pal.accent)
-  push(ctx, col("ButtonActive",  23),  pal.accent_active or pal.accent)
-  push(ctx, col("Header",        24),  with_alpha(pal.accent, 0.35))
-  push(ctx, col("HeaderHovered", 25),  with_alpha(pal.accent, 0.55))
-  push(ctx, col("HeaderActive",  26),  with_alpha(pal.accent, 0.80))
-  push(ctx, col("Separator",     27),  pal.border)
-  push(ctx, col("Text",           0),  pal.text)
-  push(ctx, col("TextDisabled",   1),  pal.text_dim)
-  push(ctx, col("Tab",           33),  pal.widget_bg)
-  push(ctx, col("TabHovered",    34),  pal.accent_hover or pal.accent)
-  push(ctx, col("TabActive",     35),  pal.accent)
+  push_if("WindowBg",       pal.bg)
+  push_if("ChildBg",        pal.panel_bg)
+  push_if("PopupBg",        pal.panel_bg)
+  push_if("Border",         pal.border)
+  push_if("FrameBg",        pal.widget_bg)
+  push_if("FrameBgHovered", pal.widget_hovered or pal.widget_bg)
+  push_if("FrameBgActive",  pal.widget_active  or pal.accent)
+  push_if("TitleBg",        pal.panel_bg)
+  push_if("TitleBgActive",  pal.bg_alt)
+  push_if("MenuBarBg",      pal.bg_alt)
+  push_if("ScrollbarBg",    pal.scrollbar_bg)
+  push_if("ScrollbarGrab",  pal.scrollbar_grab)
+  push_if("CheckMark",      pal.accent)
+  push_if("SliderGrab",     pal.accent)
+  push_if("Button",         pal.widget_bg)
+  push_if("ButtonHovered",  pal.accent_hover or pal.accent)
+  push_if("ButtonActive",   pal.accent_active or pal.accent)
+  push_if("Header",         with_alpha(pal.accent, 0.35))
+  push_if("HeaderHovered",  with_alpha(pal.accent, 0.55))
+  push_if("HeaderActive",   with_alpha(pal.accent, 0.80))
+  push_if("Separator",      pal.border)
+  push_if("Text",           pal.text)
+  push_if("TextDisabled",   pal.text_dim)
+  push_if("Tab",            pal.widget_bg)
+  push_if("TabHovered",     pal.accent_hover or pal.accent)
+  push_if("TabActive",      pal.accent)
 
-  return 26  -- number of push calls
+  return pushed
 end
 
 --- Pops previously pushed style colors.

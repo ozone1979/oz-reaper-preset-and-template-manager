@@ -39,12 +39,13 @@ local REAPER_KEYS = {
 
 -- ─── Helpers ─────────────────────────────────────────────────────────────────
 
---- Convert Reaper native color (BGR int32) to ImGui u32 (ABGR with full alpha).
+--- Convert Reaper native theme color to ImGui u32 (ABGR with full alpha).
 local function reaper_to_imgui(reaper_color)
-  -- Reaper colors from GetThemeColor are in 0xRRGGBB (big-endian) format
-  local r = (reaper_color >> 16) & 0xFF
-  local g = (reaper_color >> 8)  & 0xFF
-  local b = (reaper_color)       & 0xFF
+  -- Use API conversion to avoid channel-order ambiguity across platforms/builds.
+  local r, g, b = reaper.ColorFromNative(reaper_color)
+  r = r or 0
+  g = g or 0
+  b = b or 0
   -- ImGui IM_COL32: (a<<24)|(b<<16)|(g<<8)|r
   return (0xFF000000) | (b << 16) | (g << 8) | r
 end
@@ -195,34 +196,40 @@ function Theme.push_style(ctx, pal)
   if not ctx or not reaper.ImGui_PushStyleColor then return 0 end
 
   local push = reaper.ImGui_PushStyleColor
-  local c    = reaper.ImGui_Col_
+  local function col(name, fallback)
+    local fn = reaper["ImGui_Col_" .. name]
+    if type(fn) == "function" then
+      return fn()
+    end
+    return fallback
+  end
 
-  push(ctx, c and c("WindowBg")        or 2,  pal.bg)
-  push(ctx, c and c("ChildBg")         or 3,  pal.panel_bg)
-  push(ctx, c and c("PopupBg")         or 4,  pal.panel_bg)
-  push(ctx, c and c("Border")          or 5,  pal.border)
-  push(ctx, c and c("FrameBg")         or 7,  pal.widget_bg)
-  push(ctx, c and c("FrameBgHovered")  or 8,  pal.widget_hovered or pal.widget_bg)
-  push(ctx, c and c("FrameBgActive")   or 9,  pal.widget_active  or pal.accent)
-  push(ctx, c and c("TitleBg")         or 10, pal.panel_bg)
-  push(ctx, c and c("TitleBgActive")   or 11, pal.bg_alt)
-  push(ctx, c and c("MenuBarBg")       or 13, pal.bg_alt)
-  push(ctx, c and c("ScrollbarBg")     or 14, pal.scrollbar_bg)
-  push(ctx, c and c("ScrollbarGrab")   or 15, pal.scrollbar_grab)
-  push(ctx, c and c("CheckMark")       or 18, pal.accent)
-  push(ctx, c and c("SliderGrab")      or 19, pal.accent)
-  push(ctx, c and c("Button")          or 21, pal.widget_bg)
-  push(ctx, c and c("ButtonHovered")   or 22, pal.accent_hover or pal.accent)
-  push(ctx, c and c("ButtonActive")    or 23, pal.accent_active or pal.accent)
-  push(ctx, c and c("Header")          or 24, with_alpha(pal.accent, 0.35))
-  push(ctx, c and c("HeaderHovered")   or 25, with_alpha(pal.accent, 0.55))
-  push(ctx, c and c("HeaderActive")    or 26, with_alpha(pal.accent, 0.80))
-  push(ctx, c and c("Separator")       or 27, pal.border)
-  push(ctx, c and c("Text")            or 0,  pal.text)
-  push(ctx, c and c("TextDisabled")    or 1,  pal.text_dim)
-  push(ctx, c and c("Tab")             or 33, pal.widget_bg)
-  push(ctx, c and c("TabHovered")      or 34, pal.accent_hover or pal.accent)
-  push(ctx, c and c("TabActive")       or 35, pal.accent)
+  push(ctx, col("WindowBg",       2),  pal.bg)
+  push(ctx, col("ChildBg",        3),  pal.panel_bg)
+  push(ctx, col("PopupBg",        4),  pal.panel_bg)
+  push(ctx, col("Border",         5),  pal.border)
+  push(ctx, col("FrameBg",        7),  pal.widget_bg)
+  push(ctx, col("FrameBgHovered", 8),  pal.widget_hovered or pal.widget_bg)
+  push(ctx, col("FrameBgActive",  9),  pal.widget_active  or pal.accent)
+  push(ctx, col("TitleBg",       10),  pal.panel_bg)
+  push(ctx, col("TitleBgActive", 11),  pal.bg_alt)
+  push(ctx, col("MenuBarBg",     13),  pal.bg_alt)
+  push(ctx, col("ScrollbarBg",   14),  pal.scrollbar_bg)
+  push(ctx, col("ScrollbarGrab", 15),  pal.scrollbar_grab)
+  push(ctx, col("CheckMark",     18),  pal.accent)
+  push(ctx, col("SliderGrab",    19),  pal.accent)
+  push(ctx, col("Button",        21),  pal.widget_bg)
+  push(ctx, col("ButtonHovered", 22),  pal.accent_hover or pal.accent)
+  push(ctx, col("ButtonActive",  23),  pal.accent_active or pal.accent)
+  push(ctx, col("Header",        24),  with_alpha(pal.accent, 0.35))
+  push(ctx, col("HeaderHovered", 25),  with_alpha(pal.accent, 0.55))
+  push(ctx, col("HeaderActive",  26),  with_alpha(pal.accent, 0.80))
+  push(ctx, col("Separator",     27),  pal.border)
+  push(ctx, col("Text",           0),  pal.text)
+  push(ctx, col("TextDisabled",   1),  pal.text_dim)
+  push(ctx, col("Tab",           33),  pal.widget_bg)
+  push(ctx, col("TabHovered",    34),  pal.accent_hover or pal.accent)
+  push(ctx, col("TabActive",     35),  pal.accent)
 
   return 26  -- number of push calls
 end
